@@ -1,9 +1,12 @@
 "use client";
 
 import FormLayout from "@/components/layouts/FormLayout";
+import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import z from "zod";
@@ -25,16 +28,31 @@ const formSchema = z
 type formData = z.infer<typeof formSchema>;
 
 const SignUpPage = () => {
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<formData>({
     resolver: zodResolver(formSchema),
   });
 
   const onSubmit = async (data: formData) => {
-    console.log(data);
+    console.log({ data });
+    const { error } = await authClient.signUp.email({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error) {
+      toast.error(error.message as string);
+      // console.error(error);
+      return;
+    }
+    toast.success("Registration successful");
+    router.push("/sign-in");
   };
   return (
     <FormLayout title="Create an account" subTitle="Sign up to get started">
@@ -106,11 +124,12 @@ const SignUpPage = () => {
         </div>
 
         <button
+          disabled={isSubmitting}
           type="submit"
           className="w-full bg-teal-500 hover:bg-teal-600 text-white transition 
           font-medium py-2.5 rounded-lg flex items-center justify-center disabled:opacity-70 cursor-pointer"
         >
-          Sign up
+          {isSubmitting ? "Creating account..." : "Sign up"}
         </button>
       </form>
 
